@@ -184,7 +184,20 @@ export const clearDecisions = internalMutation({
 
 export const getUpdates = query({
   handler: async (ctx) => {
-    const updates = await ctx.db.query("updates").collect();
+    const user = await ctx.auth.getUserIdentity();
+    if (!user) throw new Error("getUpdates() called while not logged in");
+
+    const identified = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), user.email!))
+      .unique();
+    if (!identified) throw new Error("getUpdates() called while not a user");
+
+    const updates = await ctx.db
+      .query("updates")
+      .filter((q) => q.eq(q.field("group"), identified.group))
+      .collect();
+
     return updates;
   },
 });

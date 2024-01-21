@@ -221,6 +221,10 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
 
   if (compers === undefined || updates === undefined) return <Loading />;
 
+  const matchedCompersToUs = compers.filter(
+    (comper) => comper.matchedGroup === group
+  );
+
   type Comper = (typeof api.myFunctions.getCompers)["_returnType"][0];
 
   const columns: ColumnDef<Comper>[] = [
@@ -330,14 +334,13 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
       <p className="text-lg font-bold">{group}</p>
       <DataTable columns={columns} data={compers} />
       <p className="text-lg font-bold">Your new members</p>
+      {matchedCompersToUs.length === 0 && <p>No new members yet.</p>}
       <ol className="list-disc ml-8">
-        {compers
-          .filter((comper) => comper.matchedGroup === group)
-          .map((comper) => (
-            <li key={comper.id}>
-              {comper.preferredName} | {comper.email}
-            </li>
-          ))}
+        {matchedCompersToUs.map((comper) => (
+          <li key={comper.id}>
+            {comper.preferredName} | {comper.email}
+          </li>
+        ))}
       </ol>
       <p className="text-lg font-bold">Update feed (newest first)</p>
       <div className="flex flex-col gap-2">
