@@ -27,3 +27,9 @@ export function se<
   component.displayName = Tag[0].toUpperCase() + Tag.slice(1);
   return component;
 }
+
+export function notEmpty<TValue>(
+  value: TValue | null | undefined
+): value is TValue {
+  return value !== null && value !== undefined;
+}

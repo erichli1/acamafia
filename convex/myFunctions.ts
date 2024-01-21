@@ -1,11 +1,11 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import { GROUPS } from "./schema";
+import { BACKENDGROUPS } from "./schema";
 
 export const addComper = mutation({
   args: {
     preferredName: v.string(),
-    originalRanking: v.array(GROUPS),
+    originalRanking: v.array(BACKENDGROUPS),
   },
   handler: async (ctx, { preferredName, originalRanking }) => {
     const user = await ctx.auth.getUserIdentity();
@@ -35,12 +35,33 @@ export const getUser = query({
 });
 
 export const addUser = mutation({
-  args: { group: GROUPS, email: v.string() },
+  args: { group: BACKENDGROUPS, email: v.string() },
   handler: async (ctx, { group, email }) => {
     await ctx.db.insert("users", {
       email,
       group,
       admin: false,
     });
+  },
+});
+
+export const comperAlreadyExists = query({
+  handler: async (ctx) => {
+    const user = await ctx.auth.getUserIdentity();
+    if (!user)
+      throw new Error("comperAlreadyExists() called while not logged in");
+
+    const identified = await ctx.db
+      .query("compers")
+      .filter((q) => q.eq(q.field("email"), user.email!))
+      .unique();
+
+    if (identified)
+      return {
+        preferredName: identified.preferredName,
+        ranking: identified.originalRanking,
+      };
+
+    return false;
   },
 });

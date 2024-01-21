@@ -5,7 +5,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-export const GROUPS = v.union(
+export const BACKENDGROUPS = v.union(
   v.literal("Veritones"),
   v.literal("Callbacks"),
   v.literal("Lowkeys")
@@ -16,7 +16,7 @@ export default defineSchema(
     compers: defineTable({
       email: v.string(),
       preferredName: v.string(),
-      originalRanking: v.array(GROUPS),
+      originalRanking: v.array(BACKENDGROUPS),
       matched: v.boolean(),
       veritonesStatus: v.optional(v.boolean()),
       callbacksStatus: v.optional(v.boolean()),
@@ -24,7 +24,7 @@ export default defineSchema(
     }),
     users: defineTable({
       email: v.string(),
-      group: GROUPS,
+      group: BACKENDGROUPS,
       admin: v.boolean(),
     }),
   },
