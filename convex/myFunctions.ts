@@ -5,18 +5,19 @@ import { BACKENDGROUPS } from "./schema";
 export const addComper = mutation({
   args: {
     preferredName: v.string(),
-    originalRanking: v.array(BACKENDGROUPS),
+    rank: v.array(BACKENDGROUPS),
+    unranked: v.array(BACKENDGROUPS),
   },
-  handler: async (ctx, { preferredName, originalRanking }) => {
+  handler: async (ctx, { preferredName, rank }) => {
     const user = await ctx.auth.getUserIdentity();
     if (!user) throw new Error("addUser() called while not logged in");
 
     await ctx.db.insert("compers", {
       email: user.email!,
       preferredName,
-      originalRanking,
+      originalRanking: rank,
       matched: false,
-      statuses: originalRanking.map(() => null),
+      statuses: rank.map(() => null),
     });
   },
 });

@@ -38,6 +38,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Home() {
   return (
@@ -96,104 +97,57 @@ function SignedInContent() {
 
 function ComperContent() {
   const comperAlreadyExists = useQuery(api.myFunctions.comperAlreadyExists);
-  const addComper = useMutation(api.myFunctions.addComper);
-
   const { user } = useUser();
 
-  const [error, setError] = useState<"duplicate" | "nochoices" | "">("");
-
-  const [preferredName, setPreferredName] = useState<string>(
-    user?.fullName ?? ""
-  );
-  const initialState = Array.from({ length: groups.length }, () => null);
-  const [choices, setChoices] = useState<{
-    [key: number]: FRONTENDGROUPS | null;
-  }>(initialState);
-
-  const updateChoice = (index: number, newValue: FRONTENDGROUPS | null) => {
-    setError("");
-    setChoices((prevChoices) => ({
-      ...prevChoices,
-      [index]: newValue,
+  const initialGroups = Array.from({ length: groups.length }, () => false);
+  const [possibleGroups, setPossibleGroups] = useState<{
+    [key: number]: boolean;
+  }>(initialGroups);
+  const updatePossibleGroup = (index: number) => {
+    setPossibleGroups((prevGroups) => ({
+      ...prevGroups,
+      [index]: !prevGroups[index],
     }));
   };
+  const possibleGroupsAsNames = Object.values(possibleGroups)
+    .map((possible, index) => (possible ? groups[index] : null))
+    .filter(notEmpty);
 
   if (user === undefined || comperAlreadyExists === undefined)
     return <Loading />;
   if (user === null) return <p>An error occurred</p>;
 
-  const rank = Object.values(choices).filter(notEmpty);
-
   return (
     <div className="flex flex-col gap-4">
       {comperAlreadyExists === false ? (
         <>
-          <p>
-            Please submit your preferences by {config.DUEDATE}. You must select
-            at least one option.
-          </p>
-          <div>
-            <p className="text-sm mb-1">Preferred name</p>
-            <Input
-              value={preferredName}
-              onChange={(e) => {
-                setPreferredName(e.target.value);
-              }}
-              className="w-2/3"
-            />
-          </div>
-          {groups.map((_, groupIndex) => {
-            return (
-              <div key={`select-${groupIndex}`}>
-                <p className="text-sm mb-1">Choice {groupIndex + 1}</p>
-                <Select
-                  onValueChange={(value) => {
-                    const groupValue =
-                      groups.find((group) => group === value) ?? null;
-                    updateChoice(groupIndex, groupValue);
+          <p>Which groups are you in the process with?</p>
+          <div className="flex flex-col gap-2">
+            {groups.map((group, initialGroupIndex) => (
+              <div
+                className="flex items-center space-x-2"
+                key={`select-intl-group-${initialGroupIndex}`}
+              >
+                <Checkbox
+                  id="terms"
+                  checked={possibleGroups[initialGroupIndex]}
+                  onCheckedChange={() => {
+                    updatePossibleGroup(initialGroupIndex);
                   }}
-                >
-                  <SelectTrigger className="w-2/3">
-                    <SelectValue placeholder="Select a group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value={""}>N/A</SelectItem>
-                      {groups.map((group, itemIndex) => (
-                        <SelectItem
-                          key={`select-${groupIndex}-item-${itemIndex}`}
-                          value={group}
-                        >
-                          {group}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                />
+                <label className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  {group}
+                </label>
               </div>
-            );
-          })}
-          <div>
-            <Button
-              onClick={() => {
-                if (rank.length !== new Set(rank).size) setError("duplicate");
-                else
-                  addComper({
-                    preferredName: preferredName,
-                    originalRanking: rank,
-                  }).catch(console.error);
-              }}
-              disabled={preferredName === "" || rank.length === 0}
-            >
-              Submit
-            </Button>
+            ))}
           </div>
-          {error === "duplicate" && (
-            <Alert variant="destructive">
-              Please remove any duplicate choices! Your ranking is currently{" "}
-              {rank.join(", ")}
-            </Alert>
-          )}
+          <p>{config.PREFERENCES_DESCRIPTION}</p>
+          <DecideOnGroups
+            // Re-render component when changes made
+            key={`${possibleGroupsAsNames.join("-")}-${user.fullName ?? ""}`}
+            possibleGroups={possibleGroupsAsNames}
+            initialName={user.fullName ?? ""}
+          />
         </>
       ) : (
         <>
@@ -211,6 +165,106 @@ function ComperContent() {
         </>
       )}
     </div>
+  );
+}
+
+function DecideOnGroups({
+  possibleGroups,
+  initialName,
+}: {
+  possibleGroups: FRONTENDGROUPS[];
+  initialName: string;
+}) {
+  const addComper = useMutation(api.myFunctions.addComper);
+
+  const [preferredName, setPreferredName] = useState<string>(initialName);
+
+  const initialState = Array.from({ length: possibleGroups.length }, () => -1);
+  const [choices, setChoices] = useState<{
+    [key: number]: number;
+  }>(initialState);
+  const updateChoice = (index: number, newValue: number) => {
+    setChoices((prevChoices) => ({
+      ...prevChoices,
+      [index]: newValue,
+    }));
+  };
+
+  const choicesArray = Object.values(choices);
+  console.log(choicesArray);
+
+  return (
+    <>
+      <div>
+        <p className="text-sm mb-1">Preferred name</p>
+        <Input
+          value={preferredName}
+          onChange={(e) => {
+            setPreferredName(e.target.value);
+          }}
+          className="w-2/3"
+        />
+      </div>
+      {possibleGroups.map((possibleGroup, groupIndex) => {
+        return (
+          <div key={`decide-${groupIndex}`}>
+            <p className="text-sm mb-1">{possibleGroup}</p>
+            <Select
+              onValueChange={(value) => {
+                updateChoice(groupIndex, parseInt(value));
+              }}
+            >
+              <SelectTrigger className="w-2/3">
+                <SelectValue placeholder="Select an option" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value={"0"}>Do not rank</SelectItem>
+                  {possibleGroups.map((_, itemIndex) => (
+                    <SelectItem
+                      key={`select-${groupIndex}-item-${itemIndex}`}
+                      value={`${itemIndex + 1}`}
+                    >
+                      Rank {itemIndex + 1}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      })}
+      <div>
+        <Button
+          onClick={() => {
+            const rawRank: Array<FRONTENDGROUPS | null> = Array.from(
+              { length: possibleGroups.length + 1 },
+              () => null
+            );
+            const unranked: Array<FRONTENDGROUPS> = [];
+
+            choicesArray.forEach((choiceVal, groupIndex) => {
+              if (choiceVal === 0) unranked.push(possibleGroups[groupIndex]);
+              else rawRank[choiceVal] = possibleGroups[groupIndex];
+            });
+
+            addComper({
+              preferredName: preferredName,
+              rank: rawRank.filter(notEmpty),
+              unranked,
+            }).catch(console.error);
+          }}
+          disabled={
+            preferredName === "" ||
+            choicesArray.some((choice) => choice === -1) ||
+            choicesArray.filter((choice) => choice !== 0).length !==
+              new Set(choicesArray.filter((choice) => choice !== 0)).size
+          }
+        >
+          Submit
+        </Button>
+      </div>
+    </>
   );
 }
 
