@@ -31,6 +31,17 @@ import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Home() {
   return (
@@ -209,7 +220,10 @@ function ComperContent() {
 
 function GroupContent({ group }: { group: FRONTENDGROUPS }) {
   const compers = useQuery(api.myFunctions.getCompers);
-  if (compers === undefined) return <Loading />;
+  const updates = useQuery(api.myFunctions.getUpdates);
+  const decideComper = useMutation(api.myFunctions.decideComper);
+
+  if (compers === undefined || updates === undefined) return <Loading />;
 
   type Comper = (typeof api.myFunctions.getCompers)["_returnType"][0];
 
@@ -223,15 +237,130 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
       header: "Email",
     },
     {
-      accessorFn: (comper) => (comper.matched ? "Yes" : "Not yet!"),
+      accessorFn: (comper) =>
+        comper.matched ? comper.matchedGroup : "Not yet!",
       header: "Matched?",
+    },
+    {
+      accessorKey: "decision",
+      header: "Decision",
+      cell: ({ row }) => {
+        const { decision, id, preferredName, matched } = row.original;
+        if (decision !== null) return decision ? "Accepted" : "Rejected";
+
+        return (
+          <div className="flex flex-row gap-1">
+            {matched ? (
+              <p>Already matched.</p>
+            ) : (
+              <>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="bg-green-700 hover:bg-green-800"
+                    >
+                      Accept
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Accept {preferredName}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to accept this auditionee? This
+                        action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          decideComper({
+                            comperId: id,
+                            status: true,
+                          }).catch(console.error);
+                        }}
+                        className="bg-green-700 hover:bg-green-800"
+                      >
+                        Accept
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" className="bg-red-700 hover:bg-red-800">
+                      Reject
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Reject {preferredName}
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to reject this auditionee? This
+                        action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          decideComper({
+                            comperId: id,
+                            status: false,
+                          }).catch(console.error);
+                        }}
+                        className="bg-red-700 hover:bg-red-800"
+                      >
+                        Reject
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div className="flex flex-col gap-4">
-      <p>{group}</p>
+      <p className="text-lg font-bold">{group}</p>
       <DataTable columns={columns} data={compers} />
+      <p className="text-lg font-bold">Your new members</p>
+      <ol className="list-disc ml-8">
+        {compers
+          .filter((comper) => comper.matchedGroup === group)
+          .map((comper) => (
+            <li key={comper.id}>
+              {comper.preferredName} | {comper.email}
+            </li>
+          ))}
+      </ol>
+      <p className="text-lg font-bold">Update feed (newest first)</p>
+      <div className="flex flex-col gap-2">
+        {updates.reverse().map((update) => (
+          <Alert key={update._id}>
+            <div>
+              <span className="font-bold">
+                {new Date(update._creationTime).toLocaleString()}:{" "}
+              </span>
+              <span>
+                {update.group === "None"
+                  ? `${update.name} (${update.email}) did not match with a group`
+                  : `${update.name} (${update.email}) matched to ${update.group}`}
+              </span>
+            </div>
+          </Alert>
+        ))}
+        {updates.length === 0 && <p>No updates yet.</p>}
+      </div>
     </div>
   );
 }

@@ -18,14 +18,17 @@ export default defineSchema(
       preferredName: v.string(),
       originalRanking: v.array(BACKENDGROUPS),
       matched: v.boolean(),
-      veritonesStatus: v.optional(v.boolean()),
-      callbacksStatus: v.optional(v.boolean()),
-      lowkeysStatus: v.optional(v.boolean()),
+      matchedGroup: v.optional(v.string()),
+      statuses: v.array(v.union(v.boolean(), v.null())),
     }),
     users: defineTable({
       email: v.string(),
       group: BACKENDGROUPS,
-      admin: v.boolean(),
+    }),
+    updates: defineTable({
+      name: v.string(),
+      email: v.string(),
+      group: v.union(BACKENDGROUPS, v.literal("None")),
     }),
   },
   // If you ever get an error about schema mismatch
