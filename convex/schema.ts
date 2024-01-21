@@ -17,6 +17,7 @@ export default defineSchema(
       email: v.string(),
       preferredName: v.string(),
       originalRanking: v.array(BACKENDGROUPS),
+      unranked: v.array(BACKENDGROUPS),
       matched: v.boolean(),
       matchedGroup: v.optional(v.string()),
       statuses: v.array(v.union(v.boolean(), v.null())),

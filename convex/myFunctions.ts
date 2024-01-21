@@ -8,7 +8,7 @@ export const addComper = mutation({
     rank: v.array(BACKENDGROUPS),
     unranked: v.array(BACKENDGROUPS),
   },
-  handler: async (ctx, { preferredName, rank }) => {
+  handler: async (ctx, { preferredName, rank, unranked }) => {
     const user = await ctx.auth.getUserIdentity();
     if (!user) throw new Error("addUser() called while not logged in");
 
@@ -16,6 +16,7 @@ export const addComper = mutation({
       email: user.email!,
       preferredName,
       originalRanking: rank,
+      unranked,
       matched: false,
       statuses: rank.map(() => null),
     });
@@ -61,6 +62,7 @@ export const comperAlreadyExists = query({
       return {
         preferredName: identified.preferredName,
         ranking: identified.originalRanking,
+        unranked: identified.unranked,
       };
 
     return false;
@@ -79,14 +81,10 @@ export const getCompers = query({
     if (!identified) throw new Error("getCompers() called while not a user");
 
     const allCompers = await ctx.db.query("compers").collect();
-    const filteredCompers = allCompers
+    const rankedCompers = allCompers
       .filter((comper) => comper.originalRanking.includes(identified.group))
       .map((comper) => ({
-        id: comper._id,
-        preferredName: comper.preferredName,
-        email: comper.email,
-        matched: comper.matched,
-        matchedGroup: comper.matchedGroup,
+        ...comper,
         decision:
           comper.statuses[
             comper.originalRanking.findIndex(
@@ -95,7 +93,11 @@ export const getCompers = query({
           ],
       }));
 
-    return filteredCompers;
+    const unrankedCompers = allCompers.filter((comper) =>
+      comper.unranked.includes(identified.group)
+    );
+
+    return { ranked: rankedCompers, unranked: unrankedCompers };
   },
 });
 

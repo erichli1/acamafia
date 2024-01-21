@@ -275,11 +275,11 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
 
   if (compers === undefined || updates === undefined) return <Loading />;
 
-  const matchedCompersToUs = compers.filter(
+  const matchedCompersToUs = compers.ranked.filter(
     (comper) => comper.matchedGroup === group
   );
 
-  type Comper = (typeof api.myFunctions.getCompers)["_returnType"][0];
+  type Comper = (typeof api.myFunctions.getCompers)["_returnType"]["ranked"][0];
 
   const columns: ColumnDef<Comper>[] = [
     {
@@ -299,7 +299,7 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
       accessorKey: "decision",
       header: "Decision",
       cell: ({ row }) => {
-        const { decision, id, preferredName, matched } = row.original;
+        const { decision, _id, preferredName, matched } = row.original;
         if (decision !== null) return decision ? "Accepted" : "Rejected";
 
         return (
@@ -332,7 +332,7 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
                       <AlertDialogAction
                         onClick={() => {
                           decideComper({
-                            comperId: id,
+                            comperId: _id,
                             status: true,
                           }).catch(console.error);
                         }}
@@ -364,7 +364,7 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
                       <AlertDialogAction
                         onClick={() => {
                           decideComper({
-                            comperId: id,
+                            comperId: _id,
                             status: false,
                           }).catch(console.error);
                         }}
@@ -386,13 +386,25 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-lg font-bold">{group}</p>
-      <DataTable columns={columns} data={compers} />
+      <DataTable columns={columns} data={compers.ranked} />
+      {compers.unranked.length > 0 && (
+        <>
+          <p className="text-lg font-bold">Auditionees that did not rank</p>
+          <ol className="list-disc ml-8">
+            {compers.unranked.map((comper) => (
+              <li key={comper._id}>
+                {comper.preferredName} | {comper.email}
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
       <p className="text-lg font-bold">Your new members</p>
       {matchedCompersToUs.length === 0 && <p>No new members yet.</p>}
       <ol className="list-disc ml-8">
         {matchedCompersToUs.map((comper) => (
-          <li key={comper.id}>
-            {comper.preferredName} | {comper.email}
+          <li key={comper._id}>
+            {comper.preferredName}, {comper.email}
           </li>
         ))}
       </ol>
