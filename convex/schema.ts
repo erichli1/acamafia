@@ -5,17 +5,27 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+export const GROUPS = v.union(
+  v.literal("Veritones"),
+  v.literal("Callbacks"),
+  v.literal("Lowkeys")
+);
+
 export default defineSchema(
   {
-    documents: defineTable({
-      fieldOne: v.string(),
-      fieldTwo: v.object({
-        subFieldOne: v.array(v.number()),
-      }),
+    compers: defineTable({
+      email: v.string(),
+      preferredName: v.string(),
+      originalRanking: v.array(GROUPS),
+      matched: v.boolean(),
+      veritonesStatus: v.optional(v.boolean()),
+      callbacksStatus: v.optional(v.boolean()),
+      lowkeysStatus: v.optional(v.boolean()),
     }),
-    // This definition matches the example query and mutation code:
-    numbers: defineTable({
-      value: v.number(),
+    users: defineTable({
+      email: v.string(),
+      group: GROUPS,
+      admin: v.boolean(),
     }),
   },
   // If you ever get an error about schema mismatch
