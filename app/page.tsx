@@ -29,6 +29,8 @@ import {
 import { notEmpty } from "@/lib/utils";
 import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { ColumnDef } from "@tanstack/react-table";
+import { DataTable } from "@/components/ui/data-table";
 
 export default function Home() {
   return (
@@ -76,11 +78,11 @@ function SignedInContent() {
 
   return (
     <>
-      {user === null ? (
-        <ComperContent />
-      ) : (
-        <GroupContent group={user.group} admin={user.admin} />
-      )}
+      {user === null ? <ComperContent /> : <GroupContent group={user.group} />}
+      <p>
+        If you run into any problems, please contact me at
+        ehli@college.harvard.edu
+      </p>
     </>
   );
 }
@@ -201,25 +203,36 @@ function ComperContent() {
           </ul>
         </>
       )}
-      <p>
-        If you run into any problems, please contact me at
-        ehli@college.harvard.edu
-      </p>
     </div>
   );
 }
 
-function GroupContent({
-  group,
-  admin,
-}: {
-  group: FRONTENDGROUPS;
-  admin: boolean;
-}) {
+function GroupContent({ group }: { group: FRONTENDGROUPS }) {
+  const compers = useQuery(api.myFunctions.getCompers);
+  if (compers === undefined) return <Loading />;
+
+  type Comper = (typeof api.myFunctions.getCompers)["_returnType"][0];
+
+  const columns: ColumnDef<Comper>[] = [
+    {
+      accessorKey: "preferredName",
+      header: "Name",
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+    },
+    {
+      accessorFn: (comper) => (comper.matched ? "Yes" : "Not yet!"),
+      header: "Matched?",
+    },
+  ];
+
   return (
-    <>
-      <p>Registered with: {group}</p>
-    </>
+    <div className="flex flex-col gap-4">
+      <p>{group}</p>
+      <DataTable columns={columns} data={compers} />
+    </div>
   );
 }
 

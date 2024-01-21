@@ -65,3 +65,27 @@ export const comperAlreadyExists = query({
     return false;
   },
 });
+
+export const getCompers = query({
+  handler: async (ctx) => {
+    const user = await ctx.auth.getUserIdentity();
+    if (!user) throw new Error("getCompers() called while not logged in");
+
+    const identified = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), user.email!))
+      .unique();
+    if (!identified) throw new Error("getCompers() called while not a user");
+
+    const allCompers = await ctx.db.query("compers").collect();
+    const filteredCompers = allCompers
+      .filter((comper) => comper.originalRanking.includes(identified.group))
+      .map((comper) => ({
+        preferredName: comper.preferredName,
+        email: comper.email,
+        matched: comper.matched,
+      }));
+
+    return filteredCompers;
+  },
+});
