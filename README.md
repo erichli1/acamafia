@@ -1,21 +1,14 @@
-# Convex + TypeScript + Next.js + Clerk + Tailwind + shadcn/ui
+## TLDR
+Webapp where acapella auditionees can rank their group preferences and groups can easily accept/reject candidates.
 
-This template provides a minimal setup to get Convex working with [Next.js](https://nextjs.org/). It uses [Clerk](https://clerk.dev/) for user authentication.
+## Problem
+In the final night of acapella auditions, many groups are deciding between many candidates. Usually, this requires two whole other groups to manage (ie: tracking which groups accept who, what preferences auditionees have, communicating that outwards) which results in a high-touch and time-intensive process.
 
-Start by editing `convex/myFunctions.ts` and interact with your Next.js app.
+## Solution
+This app allows auditionees to rank groups in the app as well as for groups to accept/reject candidates. Then, depending on the ordering of the auditionees' preferences, groups would also be notified when a candidate is matched to another group (potentially saving lots of deliberation time).
 
-See Convex docs at https://docs.convex.dev/home
+## Setup
+`npm i` installs the necessary packages and `npm run dev` runs the app locally. Note this project is built on top of [Convex](https://www.convex.dev/) and running locally or deploying it would require an account there.
 
-## Setting up
-
-```
-npm create convex@latest -t nextjs-clerk-shadcn
-```
-
-Then:
-
-1. Follow steps 1 to 3 in the [Clerk onboarding guide](https://docs.convex.dev/auth/clerk#get-started)
-2. Paste the Issuer URL as `CLERK_JWT_ISSUER_DOMAIN` to your dev deployment environment variable settings on the Convex dashboard (see [docs](https://docs.convex.dev/auth/clerk#configuring-dev-and-prod-instances))
-3. Paste your publishable key as `VITE_CLERK_PUBLISHABLE_KEY="<your publishable key>"` to the `.env.local` file in this directory.
-
-If you want to sync Clerk user data via webhooks, check out this [example repo](https://github.com/thomasballinger/convex-clerk-users-table/).
+## Misc
+I tried to build this project in a relatively extensible way. Adding more groups should only require changing `groups` in `lib/types` and `BACKENDGROUPS` in `convex/schema`.

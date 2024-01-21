@@ -7,16 +7,11 @@ import {
   useMutation,
   useQuery,
 } from "convex/react";
-import {
-  SignInButton,
-  SignUpButton,
-  UserButton,
-  useUser,
-} from "@clerk/clerk-react";
+import { SignInButton, UserButton, useUser } from "@clerk/clerk-react";
 import { StickyHeader } from "@/components/layout/sticky-header";
 import { api } from "@/convex/_generated/api";
 import { groups, FRONTENDGROUPS } from "@/lib/types";
-import { DUEDATE, TITLE } from "@/lib/config";
+import { config } from "@/lib/config";
 import { useState } from "react";
 import {
   Select,
@@ -42,30 +37,38 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
   return (
     <>
       <StickyHeader className="px-4 py-2">
         <div className="flex justify-between items-center">
-          {TITLE}
-          <SignInAndSignUpButtons />
+          {config.TITLE}
+          <HeaderButtons />
         </div>
       </StickyHeader>
       <main className="container max-w-2xl flex flex-col gap-8">
-        <h1 className="text-4xl font-extrabold my-8 text-center">{TITLE}</h1>
+        <h1 className="text-4xl font-extrabold my-8 text-center">
+          {config.TITLE}
+        </h1>
         <Authenticated>
           <SignedInContent />
         </Authenticated>
         <Unauthenticated>
-          <p>Click one of the buttons in the top right corner to sign in.</p>
+          <p>{config.AUDITIONEE_DESCRIPTION}</p>
         </Unauthenticated>
+        <Separator />
+        <p>
+          If you run into any problems, please contact me at
+          ehli@college.harvard.edu
+        </p>
       </main>
     </>
   );
 }
 
-function SignInAndSignUpButtons() {
+function HeaderButtons() {
   return (
     <div className="flex gap-4">
       <Authenticated>
@@ -73,11 +76,8 @@ function SignInAndSignUpButtons() {
       </Authenticated>
       <Unauthenticated>
         <SignInButton mode="modal">
-          <Button variant="ghost">Sign in</Button>
+          <Button>Sign in</Button>
         </SignInButton>
-        <SignUpButton mode="modal">
-          <Button>Sign up</Button>
-        </SignUpButton>
       </Unauthenticated>
     </div>
   );
@@ -90,10 +90,6 @@ function SignedInContent() {
   return (
     <>
       {user === null ? <ComperContent /> : <GroupContent group={user.group} />}
-      <p>
-        If you run into any problems, please contact me at
-        ehli@college.harvard.edu
-      </p>
     </>
   );
 }
@@ -133,8 +129,8 @@ function ComperContent() {
       {comperAlreadyExists === false ? (
         <>
           <p>
-            Please submit your preferences by {DUEDATE}. You must select at
-            least one option.
+            Please submit your preferences by {config.DUEDATE}. You must select
+            at least one option.
           </p>
           <div>
             <p className="text-sm mb-1">Preferred name</p>
