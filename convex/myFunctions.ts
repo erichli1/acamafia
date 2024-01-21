@@ -140,6 +140,7 @@ export const decideComper = mutation({
       await ctx.db.insert("updates", {
         name: comper.preferredName,
         email: comper.email,
+        relevantGroups: comper.originalRanking,
         group: "None",
       });
     } else {
@@ -151,6 +152,7 @@ export const decideComper = mutation({
       await ctx.db.insert("updates", {
         name: comper.preferredName,
         email: comper.email,
+        relevantGroups: comper.originalRanking,
         group: comper.originalRanking[result],
       });
     }
@@ -196,11 +198,12 @@ export const getUpdates = query({
       .unique();
     if (!identified) throw new Error("getUpdates() called while not a user");
 
-    const updates = await ctx.db
-      .query("updates")
-      .filter((q) => q.eq(q.field("group"), identified.group))
-      .collect();
+    const updates = await ctx.db.query("updates").collect();
 
-    return updates;
+    const relevantUpdates = updates.filter((update) =>
+      update.relevantGroups.includes(identified.group)
+    );
+
+    return relevantUpdates;
   },
 });

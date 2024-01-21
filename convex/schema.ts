@@ -29,6 +29,7 @@ export default defineSchema(
     updates: defineTable({
       name: v.string(),
       email: v.string(),
+      relevantGroups: v.array(BACKENDGROUPS),
       group: v.union(BACKENDGROUPS, v.literal("None")),
     }),
   },
