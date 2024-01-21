@@ -161,6 +161,7 @@ function ComperContent() {
               Group rankings (in order):{" "}
               {comperAlreadyExists.ranking.join(", ")}
             </li>
+            <li>Unranked groups: {comperAlreadyExists.unranked.join(", ")}</li>
           </ul>
         </>
       )}
@@ -191,7 +192,17 @@ function DecideOnGroups({
   };
 
   const choicesArray = Object.values(choices);
-  console.log(choicesArray);
+  const rawRank: Array<FRONTENDGROUPS | null> = Array.from(
+    { length: possibleGroups.length + 1 },
+    () => null
+  );
+  const unranked: Array<FRONTENDGROUPS> = [];
+
+  choicesArray.forEach((choiceVal, groupIndex) => {
+    if (choiceVal === 0) unranked.push(possibleGroups[groupIndex]);
+    else rawRank[choiceVal] = possibleGroups[groupIndex];
+  });
+  const ranked = rawRank.filter(notEmpty);
 
   return (
     <>
@@ -235,34 +246,52 @@ function DecideOnGroups({
         );
       })}
       <div>
-        <Button
-          onClick={() => {
-            const rawRank: Array<FRONTENDGROUPS | null> = Array.from(
-              { length: possibleGroups.length + 1 },
-              () => null
-            );
-            const unranked: Array<FRONTENDGROUPS> = [];
-
-            choicesArray.forEach((choiceVal, groupIndex) => {
-              if (choiceVal === 0) unranked.push(possibleGroups[groupIndex]);
-              else rawRank[choiceVal] = possibleGroups[groupIndex];
-            });
-
-            addComper({
-              preferredName: preferredName,
-              rank: rawRank.filter(notEmpty),
-              unranked,
-            }).catch(console.error);
-          }}
-          disabled={
-            preferredName === "" ||
-            choicesArray.some((choice) => choice === -1) ||
-            choicesArray.filter((choice) => choice !== 0).length !==
-              new Set(choicesArray.filter((choice) => choice !== 0)).size
-          }
-        >
-          Submit
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              disabled={
+                preferredName === "" ||
+                choicesArray.length === 0 ||
+                choicesArray.some((choice) => choice === -1) ||
+                choicesArray.filter((choice) => choice !== 0).length !==
+                  new Set(choicesArray.filter((choice) => choice !== 0)).size
+              }
+            >
+              Submit
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Are you sure you want to submit?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to submit these preferences? This action
+                cannot be undone. Please confirm the following:
+                <br />
+                <br /> Preferred Name: {preferredName}
+                <br /> Ranked groups (in order): {ranked.join(", ")}
+                <br />
+                {unranked.length > 0 &&
+                  `Unranked groups: ${unranked.join(", ")}`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  addComper({
+                    preferredName: preferredName,
+                    rank: ranked,
+                    unranked,
+                  }).catch(console.error);
+                }}
+              >
+                Submit
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </>
   );
@@ -393,7 +422,7 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
           <ol className="list-disc ml-8">
             {compers.unranked.map((comper) => (
               <li key={comper._id}>
-                {comper.preferredName} | {comper.email}
+                {comper.preferredName}, {comper.email}
               </li>
             ))}
           </ol>
