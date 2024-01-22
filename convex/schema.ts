@@ -8,7 +8,7 @@ import { v } from "convex/values";
 export const BACKENDGROUPS = v.union(
   v.literal("Veritones"),
   v.literal("Callbacks"),
-  v.literal("Lowkeys")
+  v.literal("Opportunes")
 );
 
 export default defineSchema(
