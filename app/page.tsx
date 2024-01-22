@@ -304,10 +304,6 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
 
   if (compers === undefined || updates === undefined) return <Loading />;
 
-  const matchedCompersToUs = compers.ranked.filter(
-    (comper) => comper.matchedGroup === group
-  );
-
   type Comper = (typeof api.myFunctions.getCompers)["_returnType"]["ranked"][0];
 
   const columns: ColumnDef<Comper>[] = [
@@ -320,16 +316,16 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
       header: "Email",
     },
     {
-      accessorFn: (comper) =>
-        comper.matched ? comper.matchedGroup : "Not yet!",
-      header: "Matched?",
+      header: "Status",
+      accessorFn: ({ decision, matched }) =>
+        matched ? "Matched" : decision === null ? "Needs decision" : "Waiting",
     },
     {
       accessorKey: "decision",
       header: "Decision",
       cell: ({ row }) => {
         const { decision, _id, preferredName, matched } = row.original;
-        if (decision !== null) return decision ? "Accepted" : "Rejected";
+        if (decision !== null) return decision ? "Accepted" : "Released";
 
         return (
           <div className="flex flex-row gap-1">
@@ -375,16 +371,16 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button size="sm" className="bg-red-700 hover:bg-red-800">
-                      Reject
+                      Release
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        Reject {preferredName}
+                        Release {preferredName}
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to reject this auditionee? This
+                        Are you sure you want to release this auditionee? This
                         action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -399,7 +395,7 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
                         }}
                         className="bg-red-700 hover:bg-red-800"
                       >
-                        Reject
+                        Release
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -411,6 +407,8 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
       },
     },
   ];
+
+  const matchedCompersToUs = updates.filter((update) => update.group === group);
 
   return (
     <div className="flex flex-col gap-4">
@@ -433,7 +431,7 @@ function GroupContent({ group }: { group: FRONTENDGROUPS }) {
       <ol className="list-disc ml-8">
         {matchedCompersToUs.map((comper) => (
           <li key={comper._id}>
-            {comper.preferredName}, {comper.email}
+            {comper.name}, {comper.email}
           </li>
         ))}
       </ol>

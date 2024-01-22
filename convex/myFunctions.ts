@@ -1,6 +1,8 @@
+import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { query, mutation, internalMutation } from "./_generated/server";
 import { BACKENDGROUPS } from "./schema";
+import { identifyIfIndexIfDone } from "./helpers";
 
 export const addComper = mutation({
   args: {
@@ -18,6 +20,7 @@ export const addComper = mutation({
       originalRanking: rank,
       unranked,
       matched: false,
+      matchScheduled: false,
       statuses: rank.map(() => null),
     });
   },
@@ -130,43 +133,45 @@ export const decideComper = mutation({
     newStatuses[groupIndex] = status;
 
     const result = identifyIfIndexIfDone(newStatuses);
-    if (result === -1) await ctx.db.patch(comperId, { statuses: newStatuses });
-    else if (result === -2) {
+    if (result === -1 || comper.matchScheduled)
+      await ctx.db.patch(comperId, { statuses: newStatuses });
+    else {
+      const randomDelay = await randomDelayForUpdates(ctx, {});
+
       await ctx.db.patch(comperId, {
         statuses: newStatuses,
-        matched: true,
-        matchedGroup: "None",
+        matchScheduled: true,
       });
-      await ctx.db.insert("updates", {
+      await ctx.scheduler.runAfter(randomDelay, api.myFunctions.matchComper, {
+        comperId,
         name: comper.preferredName,
         email: comper.email,
         relevantGroups: comper.originalRanking,
-        group: "None",
-      });
-    } else {
-      await ctx.db.patch(comperId, {
-        statuses: newStatuses,
-        matched: true,
-        matchedGroup: comper.originalRanking[result],
-      });
-      await ctx.db.insert("updates", {
-        name: comper.preferredName,
-        email: comper.email,
-        relevantGroups: comper.originalRanking,
-        group: comper.originalRanking[result],
+        group: result === -2 ? "None" : comper.originalRanking[result],
       });
     }
   },
 });
 
-const identifyIfIndexIfDone = (statuses: Array<boolean | null>) => {
-  for (let i = 0; i < statuses.length; i++) {
-    if (statuses[i] === false) continue;
-    if (statuses[i] === true) return i;
-    else if (statuses[i] === null) return -1;
-  }
-  return -2;
-};
+export const matchComper = mutation({
+  args: {
+    comperId: v.id("compers"),
+    name: v.string(),
+    email: v.string(),
+    relevantGroups: v.array(BACKENDGROUPS),
+    group: v.union(BACKENDGROUPS, v.literal("None")),
+  },
+  handler: async (ctx, { comperId, name, email, relevantGroups, group }) => {
+    await ctx.db.insert("updates", {
+      name,
+      email,
+      relevantGroups,
+      group,
+    });
+
+    await ctx.db.patch(comperId, { matched: true });
+  },
+});
 
 export const clearDecisions = internalMutation({
   args: {},
@@ -177,7 +182,7 @@ export const clearDecisions = internalMutation({
         ctx.db.patch(comper._id, {
           statuses: comper.statuses.map(() => null),
           matched: false,
-          matchedGroup: undefined,
+          matchScheduled: false,
         })
       )
     );
@@ -205,5 +210,30 @@ export const getUpdates = query({
     );
 
     return relevantUpdates;
+  },
+});
+
+export const randomDelayForUpdates = query({
+  handler: async (ctx) => {
+    const result = await ctx.db.query("delay").unique();
+    if (!result) throw new Error("Did not retrieve delay information");
+
+    return Math.floor(result.baseline + Math.random() * result.range);
+  },
+});
+
+export const addToDelay = internalMutation({
+  args: { baseline: v.number(), range: v.number() },
+  handler: async (ctx, { baseline, range }) => {
+    const results = await ctx.db.query("delay").collect();
+    if (results.length > 0) {
+      await ctx.db.patch(results[0]._id, { baseline, range });
+      console.log("Delay exists. Updating it.");
+    } else {
+      await ctx.db.insert("delay", {
+        baseline,
+        range,
+      });
+    }
   },
 });

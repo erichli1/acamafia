@@ -19,7 +19,7 @@ export default defineSchema(
       originalRanking: v.array(BACKENDGROUPS),
       unranked: v.array(BACKENDGROUPS),
       matched: v.boolean(),
-      matchedGroup: v.optional(v.string()),
+      matchScheduled: v.boolean(),
       statuses: v.array(v.union(v.boolean(), v.null())),
     }),
     users: defineTable({
@@ -31,6 +31,10 @@ export default defineSchema(
       email: v.string(),
       relevantGroups: v.array(BACKENDGROUPS),
       group: v.union(BACKENDGROUPS, v.literal("None")),
+    }),
+    delay: defineTable({
+      baseline: v.number(),
+      range: v.number(),
     }),
   },
   // If you ever get an error about schema mismatch
