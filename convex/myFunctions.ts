@@ -205,11 +205,11 @@ export const getUpdates = query({
 
     const updates = await ctx.db.query("updates").collect();
 
-    const relevantUpdates = updates.filter((update) =>
-      update.relevantGroups.includes(identified.group)
-    );
+    // const relevantUpdates = updates.filter((update) =>
+    //   update.relevantGroups.includes(identified.group)
+    // );
 
-    return relevantUpdates;
+    return updates;
   },
 });
 
